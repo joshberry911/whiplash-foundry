@@ -155,6 +155,7 @@ let dialogTemplate = `
             let dmgFormula = "";
           
             // TODO fix versatile damage on groks mojo
+            // FIXME this hard codes a dex modifier
             const dexMod = actor.system.abilities.dex.mod ?? 0;
             if (versatile && !dmgFormula && wep.system.damage.versatile) {
               //dmgFormula = `${wep.system.damage.versatile.formula} + ${dexMod}`;
@@ -174,73 +175,26 @@ let dialogTemplate = `
               return ui.notifications.error(`Weapon "${wep.name}" has no damage formula.`);
             }
 
-            // Roll base damage twice and pick the highest for savage attacker
-            //const rollDmg1 = await (new Roll(dmgFormula)).evaluate();
-            //console.log(rollDmg1._total)
-            //game.dice3d?.showForRoll(rollDmg1, game.user, true);
-            //const rollDmg2 = await (new Roll(dmgFormula)).evaluate();
-            //console.log(rollDmg2._total)
-            //game.dice3d?.showForRoll(rollDmg2, game.user, true);
-            //const baseDmg = rollDmg1.total >= rollDmg2.total ? rollDmg1 : rollDmg2;
-/*
-            // Savage attacker
-            const saFormula = dmgFormula.replace(/(^|\s)1d(\d+)/, "$1 2d$2kh1").replace(/\s+/g, " ").trim();
-            console.log("SA formula (string):", saFormula);
-            const saDmg = await (new Roll(saFormula)).evaluate();
-            if (game.dice3d) game.dice3d.showForRoll(saDmg, game.user, true);
-
-            // Roll damage from Divine Fury
-            const barbarianClass = selected_actor.items.find(i => i.type === "class" && i.name.toLowerCase() === "barbarian");
-            if (!barbarianClass) return ui.notifications.error("This character has no Barbarian levels.");
-            const barbarianLevel = barbarianClass.system.levels ?? 0;
-            const dfDmgMod = Math.floor(barbarianLevel / 2)
-            const dfDmg = await (new Roll(`1d6 + ${dfDmgMod}`)).evaluate();
-
-            // Work out the total damage
-            const finalFormula = `${saDmg.formula} + ${dfDmg.formula}`;
-            const finalRoll = await (new Roll(finalFormula)).evaluate();
-            
-*/
-            // --- Savage Attacker transform ---
-            // Turn "1d10+4" into "2d10kh1+4"
+            // Savage Attacker transform
             const saFormula = dmgFormula.replace(/^1d(\d+)/, "2d$1kh1");
-            const saRoll = await (new Roll(saFormula)).evaluate();
-            if (game.dice3d) game.dice3d.showForRoll(saRoll, game.user, true);
 
-            // --- Divine Fury formula ---
+            // Divine Fury formula
             const barbarianClass = selected_actor.items.find(i =>
               i.type === "class" && i.name.toLowerCase() === "barbarian"
             );
             if (!barbarianClass) return ui.notifications.error("No Barbarian levels found.");
-            const barbarianLevel = barbarianClass.system.levels ?? 0;
+            const barbarianLevel = barbarianClass.system.levels;
             const dfMod = Math.floor(barbarianLevel / 2);
             const dfFormula = `1d6 + ${dfMod}`;
-            const dfRoll = await (new Roll(dfFormula)).evaluate();
-            if (game.dice3d) game.dice3d.showForRoll(dfRoll, game.user, true);
 
-            // --- FINAL ROLL ---
-            // ❗ Use saFormula and dfFormula — NOT saRoll.formula or dfRoll.formula
+            // Define final formula and roll
             const finalFormula = `${saFormula} + ${dfFormula}`;
-            console.log("Final formula:", finalFormula);
-
-            //const finalRoll = await (new Roll(finalFormula)).evaluate();
-            //if (game.dice3d) game.dice3d.showForRoll(finalRoll, game.user, true);
-            const totalDamage = saRoll.total + dfRoll.total;
+            const finalRoll = await (new Roll(finalFormula)).evaluate();
 
             // Send to chat
-            //finalRoll.toMessage({
-            //  speaker: ChatMessage.getSpeaker({actor: selected_actor}),
-            //  flavor: `Inspired damage Roll for ${wep.name}`
-            //});
-            ChatMessage.create({
-              speaker: ChatMessage.getSpeaker(),
-              flavor: "Total Damage (Savage Attacker + Divine Fury)",
-              content: `
-                <div><b>Savage Attacker:</b> ${saRoll.total}</div>
-                <div><b>Divine Fury:</b> ${dfRoll.total}</div>
-                <hr>
-                <div><b>Total Damage:</b> ${totalDamage}</div>
-              `
+            finalRoll.toMessage({
+              speaker: ChatMessage.getSpeaker({actor: selected_actor}),
+              flavor: `Inspired damage Roll for ${wep.name}`
             });
           };
 
