@@ -185,9 +185,36 @@ let dialogTemplate = `
             const finalRoll = await (new Roll(finalFormula)).evaluate();
 
             // Send to chat
-            finalRoll.toMessage({
+            const dmgMsg = await finalRoll.toMessage({
               speaker: ChatMessage.getSpeaker({actor: selected_actor}),
               flavor: `Inspired damage Roll for ${wep.name}`
+            });
+
+            // Wait for the dice to roll
+            if (game.dice3d) {
+              await game.dice3d.waitFor3DAnimationByMessageID(dmgMsg.id);
+            }
+
+            // Apply Damage
+            const damage = finalRoll.total;
+            let hp = target_actor.system.attributes.hp.value;
+            let temp = target_actor.system.attributes.hp.temp ?? 0;
+            let appliedDamage = damage;
+
+            // Apply to temp HP first
+            if (temp > 0) {
+              const consumed = Math.min(temp, appliedDamage);
+              temp -= consumed;
+              appliedDamage -= consumed;
+            }
+
+            // Apply remaining damage to real HP
+            hp = Math.max(hp - appliedDamage, 0);
+
+            // Update target actor
+            await target_actor.update({
+              "system.attributes.hp.temp": temp,
+              "system.attributes.hp.value": hp
             });
           };
 
