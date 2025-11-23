@@ -4,10 +4,11 @@
   Assumptions:
    Actor is using Divine Fury (i.e. it is the first attack)
    Actor has the savage attacker feat
-   Macro has a hard coded default weapon that must be equiped
+   Macro is hard coded to a homebrew weapon (Grok's Mojo)
   TODO:
-    Build in 1h/2h weapons calculations
     Select the damage type for Divine Fury
+    Fix Grok's Mojo so it has versatile damage
+    
 */
 
 main()
@@ -28,8 +29,9 @@ async function main(){
   const target_actor = targets[0].actor;
 
   // Check for Rage
-  const isRaging = selected_actor.effects.some(e => 
-    e.name.toLowerCase().includes("raging") && !e.disabled
+  const isRaging = selected_actor.effects.some(e =>
+    !e.disabled &&
+    /\brag(e|ing)\b/i.test(e.name)   // matches "rage" or "raging"
   );
   if (!isRaging) {
     return ui.notifications.error("You must be raging to use divine fury");
@@ -53,8 +55,6 @@ async function main(){
     `;
   }
 
-  // TODO: 1h 2h toggle needed
-  // TODO: need to use weapon.system.damage.versatile instead
 let dialogTemplate = `
   <h1>Pick a Weapon</h1>
 
@@ -102,8 +102,8 @@ let dialogTemplate = `
           const advantage = html.find("#advantage")[0].checked;
           const disadvantage = html.find("#disadvantage")[0].checked;
 
-
           // Determine which ability the weapon uses
+          // TODO: Grok's Mojo is a strength weapon?
           let ability = wep.system.ability ?? "dex";
           const abilityMod = selected_actor.system.abilities[ability].mod;
 
@@ -156,13 +156,12 @@ let dialogTemplate = `
           
             // TODO fix versatile damage on groks mojo
             // FIXME this hard codes a dex modifier
-            const dexMod = actor.system.abilities.dex.mod ?? 0;
             if (versatile && !dmgFormula && wep.system.damage.versatile) {
-              //dmgFormula = `${wep.system.damage.versatile.formula} + ${dexMod}`;
-              dmgFormula = `1d10 + ${dexMod}`
+              //dmgFormula = `${wep.system.damage.versatile.formula} + ${abilityMod}`;
+              dmgFormula = `1d10 + ${abilityMod}`
             }
             else if (!dmgFormula && wep.system.damage.base) {
-              dmgFormula = `${wep.system.damage.base.formula} + ${dexMod}`;
+              dmgFormula = `${wep.system.damage.base.formula} + ${abilityMod}`;
             }
           
             // Unarmed strike fallback
