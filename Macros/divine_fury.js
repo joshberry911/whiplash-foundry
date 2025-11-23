@@ -63,11 +63,6 @@ let dialogTemplate = `
   </div>
 
   <div style="margin-top: 8px;">
-    Modifier:
-    <input id="modInput" type="text" style="width:80px;" value="" />
-  </div>
-
-  <div style="margin-top: 8px;">
     Advantage:
     <input id="advantage" type="checkbox" />
     Disadvantage:
@@ -96,7 +91,6 @@ let dialogTemplate = `
           // Get weapon + modifiers
           const wepID = html.find("#weapon")[0].value;
           const wep = selected_actor.items.get(wepID);
-          const modInput = html.find("#modInput")[0].value;
           const ignoreArmor = html.find("#ignoreArmor")[0].checked;
           const versatile = html.find("#versatile")[0].checked;
           const advantage = html.find("#advantage")[0].checked;
